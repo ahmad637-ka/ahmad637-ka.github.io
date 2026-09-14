@@ -155,6 +155,9 @@
           <div class="result-success">
             <div>✅ Verified! Apka followers count match ho gaya.</div>
             <div class="code">${data.promoCode}</div>
+            <div style="font-size:13px;color:#FFD700;margin:8px 0">
+              Your total followers/subscribers: <strong>${data.actualCount.toLocaleString()}</strong>
+            </div>
             <div style="font-size:12px;color:#8BA0C0">Ye code save kar lein aur apne followers ke sath share karein.</div>
             <button class="copy-btn" onclick="navigator.clipboard.writeText('${data.promoCode}')">📋 Copy Code</button>
           </div>
