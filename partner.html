@@ -4,137 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Become a Partner - Ads Earn App</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family:'Segoe UI',sans-serif; background:#0A1628; color:#fff;
-    min-height:100vh; display:flex; align-items:center; justify-content:center;
-    padding:20px;
-  }
-  .card {
-    background:#121929; border:1px solid #1e2d45; border-radius:20px;
-    padding:36px; width:100%; max-width:480px;
-  }
-  .logo {
-    width:60px; height:60px; background:#FFD700; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:26px; font-weight:bold; color:#7A4A00; margin:0 auto 18px;
-  }
-  h1 { text-align:center; font-size:22px; margin-bottom:6px; }
-  .sub { text-align:center; color:#8BA0C0; font-size:13px; margin-bottom:26px; }
-  .fg { margin-bottom:16px; }
-  .fg label { display:block; color:#8BA0C0; font-size:12px; margin-bottom:6px; }
-  .fg input, .fg select {
-    width:100%; padding:12px 14px; background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.12); border-radius:10px;
-    color:#fff; font-size:14px; outline:none;
-  }
-  .fg input:focus, .fg select:focus { border-color:#FFD700; }
-  .fg select option { background:#121929; }
-  .btn {
-    width:100%; padding:14px; background:#FFD700; border:none;
-    border-radius:10px; font-size:15px; font-weight:bold; color:#1A0A00;
-    cursor:pointer; margin-top:8px;
-  }
-  .btn:hover { background:#FFC200; }
-  .btn:disabled { background:#555; color:#999; cursor:not-allowed; }
-  .info-box {
-    background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25);
-    border-radius:10px; padding:12px 14px; margin-bottom:20px; font-size:12px;
-    color:#FFD700; line-height:1.5;
-  }
-  #resultBox { margin-top:20px; display:none; }
-  .result-success {
-    background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3);
-    border-radius:12px; padding:20px; text-align:center;
-  }
-  .result-success .code {
-    font-size:24px; font-weight:bold; color:#4ade80; margin:10px 0;
-    letter-spacing:1px;
-  }
-  .result-error {
-    background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
-    border-radius:12px; padding:16px; text-align:center; color:#f87171; font-size:13px;
-  }
-  .spinner {
-    border:3px solid rgba(255,255,255,0.1); border-top:3px solid #FFD700;
-    border-radius:50%; width:24px; height:24px; animation:spin 0.8s linear infinite;
-    margin:0 auto;
-  }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .copy-btn {
-    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
-    color:#fff; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer;
-    margin-top:8px;
-  }
-</style>
-</head>
-<body>
 
-<div class="card">
-  <div class="logo">$</div>
-  <h1>Become an Ads Earn Partner</h1>
-  <p class="sub">Apna social account verify karo aur apna promo code turant paao</p>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  <div class="info-box">
-    💡 Har us user se jo aapke promo code se sign up karke apni <strong>pehli withdrawal</strong> nikalega, aapko uska <strong>2% commission</strong> milega — one-time per user.
-  </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZnYb6pb5JXWpTFy15XRaAyEixZdVXclA",
+    authDomain: "this-is-my-first-app-99e55.firebaseapp.com",
+    databaseURL: "https://this-is-my-first-app-99e55-default-rtdb.firebaseio.com",
+    projectId: "this-is-my-first-app-99e55"
+  };
 
-  <form id="partnerForm">
-    <div class="fg">
-      <label>Full Name</label>
-      <input type="text" id="fullName" required placeholder="Ahmad Khan">
-    </div>
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
 
-    <div class="fg">
-      <label>Email</label>
-      <input type="email" id="email" required placeholder="you@example.com">
-    </div>
-
-    <div class="fg">
-      <label>Platform</label>
-      <select id="platform" required>
-        <option value="">Select platform</option>
-        <option value="youtube">YouTube</option>
-        <option value="tiktok">TikTok</option>
-        <option value="instagram">Instagram</option>
-      </select>
-    </div>
-
-    <div class="fg">
-      <label>Profile / Channel Link</label>
-      <input type="url" id="profileUrl" required placeholder="https://youtube.com/@yourchannel">
-    </div>
-
-    <div class="fg">
-      <label>Followers / Subscribers Count</label>
-      <input type="number" id="claimedCount" required min="1" placeholder="e.g. 5000">
-    </div>
-
-    <button type="submit" class="btn" id="submitBtn">Verify & Get My Promo Code</button>
-  </form>
-
-  <div id="resultBox"></div>
-</div>
-
-<script>
-  // ===== CONFIG - apna Railway backend URL yahan hai =====
   const BACKEND_URL = 'https://platfroms-verfications-production.up.railway.app';
 
-  const form = document.getElementById('partnerForm');
-  const submitBtn = document.getElementById('submitBtn');
-  const resultBox = document.getElementById('resultBox');
+  // ===== TAB SWITCHING =====
+  window.switchTab = function(tab) {
+    document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('resultBox').style.display = 'none';
+    document.getElementById('resultBox').innerHTML = '';
+  };
 
-  form.addEventListener('submit', async (e) => {
+  // ===== SIGNUP =====
+  window.handleSignup = async function(e) {
     e.preventDefault();
+    const submitBtn = document.getElementById('signupBtn');
+    const resultBox = document.getElementById('resultBox');
 
-    const payload = {
-      name: document.getElementById('fullName').value.trim(),
-      email: document.getElementById('email').value.trim(),
-      platform: document.getElementById('platform').value,
-      url: document.getElementById('profileUrl').value.trim(),
-      claimedCount: parseInt(document.getElementById('claimedCount').value, 10),
-    };
+    const fullName = document.getElementById('su_fullName').value.trim();
+    const email = document.getElementById('su_email').value.trim();
+    const password = document.getElementById('su_password').value;
+    const platform = document.getElementById('su_platform').value;
+    const profileUrl = document.getElementById('su_profileUrl').value.trim();
+    const claimedCount = parseInt(document.getElementById('su_claimedCount').value, 10);
+
+    if (password.length < 6) {
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<div class="result-error">❌ Password kam az kam 6 characters ka hona chahiye.</div>';
+      return;
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Verifying...';
@@ -142,47 +60,151 @@
     resultBox.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#8BA0C0;font-size:12px;margin-top:10px">Account check ho raha hai, thoda wait karein (10-30 seconds)...</p>';
 
     try {
+      // Step 1: Backend se follower/subscriber verify karo
       const response = await fetch(`${BACKEND_URL}/verify-social`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ name: fullName, email, platform, url: profileUrl, claimedCount }),
       });
-
       const data = await response.json();
 
-      if (data.verified) {
-        resultBox.innerHTML = `
-          <div class="result-success">
-            <div>✅ Verified! Apka followers count match ho gaya.</div>
-            <div class="code">${data.promoCode}</div>
-            <div style="font-size:13px;color:#FFD700;margin:8px 0">
-              Your total followers/subscribers: <strong>${data.actualCount.toLocaleString()}</strong>
-            </div>
-            <div style="font-size:12px;color:#8BA0C0">Ye code save kar lein aur apne followers ke sath share karein.</div>
-            <button class="copy-btn" onclick="navigator.clipboard.writeText('${data.promoCode}')">📋 Copy Code</button>
-          </div>
-        `;
-        form.style.display = 'none';
-      } else {
-        resultBox.innerHTML = `
-          <div class="result-error">
-            ❌ ${data.reason || 'Verification fail ho gayi. Dobara try karein ya sahi link/count dalein.'}
-          </div>
-        `;
+      if (!data.verified) {
+        resultBox.innerHTML = `<div class="result-error">❌ ${data.reason || 'Verification fail ho gayi.'}</div>`;
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Verify & Get My Promo Code';
+        submitBtn.textContent = 'Verify & Create Account';
+        return;
       }
-    } catch (err) {
+
+      // Step 2: Verified ho gaya - ab login account banao (email + password)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+
+      // Step 3: uid ko promo code se link karo taake login pe pata chal sake
+      await set(ref(db, `promoterAccounts/${uid}`), { code: data.promoCode, email, fullName });
+      await set(ref(db, `youtubers/${data.promoCode}/uid`), uid);
+
       resultBox.innerHTML = `
-        <div class="result-error">
-          ⚠️ Server se connect nahi ho saka. Thodi dair baad dobara try karein.
+        <div class="result-success">
+          <div>✅ Account ban gaya! Apka promo code:</div>
+          <div class="code">${data.promoCode}</div>
+          <div style="font-size:12px;color:#8BA0C0;margin-top:8px">Dashboard khul raha hai...</div>
         </div>
       `;
+
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1800);
+
+    } catch (err) {
+      let msg = 'Kuch ghalat ho gaya, dobara try karein.';
+      if (err.code === 'auth/email-already-in-use') {
+        msg = 'Ye email pehle se registered hai. Login tab se login karein.';
+      }
+      resultBox.innerHTML = `<div class="result-error">❌ ${msg}</div>`;
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Verify & Get My Promo Code';
+      submitBtn.textContent = 'Verify & Create Account';
     }
-  });
+  };
+
+  // ===== LOGIN =====
+  window.handleLogin = async function(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('loginBtn');
+    const resultBox = document.getElementById('resultBox');
+
+    const email = document.getElementById('li_email').value.trim();
+    const password = document.getElementById('li_password').value;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging in...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div class="spinner"></div>';
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      resultBox.innerHTML = `<div class="result-success"><div>✅ Login ho gaya! Dashboard khul raha hai...</div></div>`;
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    } catch (err) {
+      let msg = 'Email ya password ghalat hai.';
+      if (err.code === 'auth/user-not-found') msg = 'Ye email registered nahi hai. Signup tab use karein.';
+      resultBox.innerHTML = `<div class="result-error">❌ ${msg}</div>`;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Login';
+    }
+  };
 </script>
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Segoe UI',sans-serif; background:#0A1628; color:#fff;
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .card { background:#121929; border:1px solid #1e2d45; border-radius:20px; padding:36px; width:100%; max-width:480px; }
+  .logo { width:60px; height:60px; background:#FFD700; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:bold; color:#7A4A00; margin:0 auto 18px; }
+  h1 { text-align:center; font-size:22px; margin-bottom:6px; }
+  .sub { text-align:center; color:#8BA0C0; font-size:13px; margin-bottom:22px; }
+  .tabs { display:flex; gap:6px; margin-bottom:22px; background:rgba(255,255,255,0.05); padding:4px; border-radius:12px; }
+  .tab-btn { flex:1; padding:10px; background:transparent; border:none; color:#8BA0C0; font-size:14px; font-weight:bold; border-radius:9px; cursor:pointer; }
+  .tab-btn.active { background:#FFD700; color:#1A0A00; }
+  .fg { margin-bottom:16px; }
+  .fg label { display:block; color:#8BA0C0; font-size:12px; margin-bottom:6px; }
+  .fg input, .fg select { width:100%; padding:12px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:14px; outline:none; }
+  .fg input:focus, .fg select:focus { border-color:#FFD700; }
+  .fg select option { background:#121929; }
+  .btn { width:100%; padding:14px; background:#FFD700; border:none; border-radius:10px; font-size:15px; font-weight:bold; color:#1A0A00; cursor:pointer; margin-top:8px; }
+  .btn:hover { background:#FFC200; }
+  .btn:disabled { background:#555; color:#999; cursor:not-allowed; }
+  .info-box { background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; padding:12px 14px; margin-bottom:20px; font-size:12px; color:#FFD700; line-height:1.5; }
+  #resultBox { margin-top:20px; display:none; }
+  .result-success { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:12px; padding:20px; text-align:center; }
+  .result-success .code { font-size:24px; font-weight:bold; color:#4ade80; margin:10px 0; letter-spacing:1px; }
+  .result-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:16px; text-align:center; color:#f87171; font-size:13px; }
+  .spinner { border:3px solid rgba(255,255,255,0.1); border-top:3px solid #FFD700; border-radius:50%; width:24px; height:24px; animation:spin 0.8s linear infinite; margin:0 auto; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">$</div>
+  <h1>Ads Earn Partner Program</h1>
+  <p class="sub">Apna promo code banao aur commission kamao</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
+    <button class="tab-btn" id="tabLogin" onclick="switchTab('login')">Login</button>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <form id="signupForm" onsubmit="handleSignup(event)">
+    <div class="info-box">
+      💡 Har us user se jo aapke promo code se sign up karke apni <strong>pehli withdrawal</strong> nikalega, aapko uska <strong>2% commission</strong> milega.
+    </div>
+    <div class="fg"><label>Full Name</label><input type="text" id="su_fullName" required placeholder="Ahmad Khan"></div>
+    <div class="fg"><label>Email</label><input type="email" id="su_email" required placeholder="you@example.com"></div>
+    <div class="fg"><label>Password</label><input type="password" id="su_password" required minlength="6" placeholder="Kam az kam 6 characters"></div>
+    <div class="fg">
+      <label>Platform</label>
+      <select id="su_platform" required>
+        <option value="">Select platform</option>
+        <option value="youtube">YouTube</option>
+        <option value="tiktok">TikTok</option>
+        <option value="instagram">Instagram</option>
+      </select>
+    </div>
+    <div class="fg"><label>Profile / Channel Link</label><input type="url" id="su_profileUrl" required placeholder="https://youtube.com/@yourchannel"></div>
+    <div class="fg"><label>Followers / Subscribers Count</label><input type="number" id="su_claimedCount" required min="1" placeholder="e.g. 5000"></div>
+    <button type="submit" class="btn" id="signupBtn">Verify & Create Account</button>
+  </form>
+
+  <!-- LOGIN FORM -->
+  <form id="loginForm" onsubmit="handleLogin(event)" style="display:none">
+    <div class="fg"><label>Email</label><input type="email" id="li_email" required placeholder="you@example.com"></div>
+    <div class="fg"><label>Password</label><input type="password" id="li_password" required placeholder="••••••••"></div>
+    <button type="submit" class="btn" id="loginBtn">Login</button>
+  </form>
+
+  <div id="resultBox"></div>
+</div>
 
 </body>
 </html>
