@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partner Dashboard - Ads Earn App</title>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZnYb6pb5JXWpTFy15XRaAyEixZdVXclA",
+    authDomain: "this-is-my-first-app-99e55.firebaseapp.com",
+    databaseURL: "https://this-is-my-first-app-99e55-default-rtdb.firebaseio.com",
+    projectId: "this-is-my-first-app-99e55"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  let currentCode = null;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'partner.html';
+      return;
+    }
+
+    // uid se promo code dhoondo
+    const accSnap = await get(ref(db, `promoterAccounts/${user.uid}`));
+    if (!accSnap.exists()) {
+      alert('Account data nahi mila. Support se contact karein.');
+      return;
+    }
+    currentCode = accSnap.val().code;
+    loadDashboard(currentCode);
+    loadLeaderboard();
+  });
+
+  function loadDashboard(code) {
+    onValue(ref(db, `youtubers/${code}`), (snapshot) => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.val();
+
+      document.getElementById('promoCode').textContent = data.code || code;
+      document.getElementById('totalEarned').textContent =
+        `Rs. ${(Number(data.totalCommission) || 0).toFixed(2)}`;
+
+      const referredUsers = data.referredUsers ? Object.values(data.referredUsers) : [];
+      document.getElementById('totalReferred').textContent = referredUsers.length;
+
+      const withdrawnCount = referredUsers.filter(u => u.commissionPaid === true).length;
+      document.getElementById('totalWithdrawn').textContent = withdrawnCount;
+
+      // Profile fields fill karo agar pehle se saved hain
+      const pd = data.paymentDetails || {};
+      document.getElementById('pd_method').value = pd.method || '';
+      document.getElementById('pd_accountName').value = pd.accountName || '';
+      document.getElementById('pd_accountNumber').value = pd.accountNumber || '';
+      document.getElementById('pd_country').value = pd.country || '';
+      togglePaymentFields(pd.method || '');
+
+      updateProfileBadge(pd);
+    });
+  }
+
+  function updateProfileBadge(pd) {
+    const badge = document.getElementById('profileBadge');
+    const isComplete = pd && pd.method && pd.accountName && pd.accountNumber &&
+      (pd.method !== 'international' || pd.country);
+    badge.style.display = isComplete ? 'none' : 'inline-block';
+  }
+
+  window.togglePaymentFields = function(method) {
+    document.getElementById('pd_method').value = method;
+    document.getElementById('countryField').style.display = method === 'international' ? 'block' : 'none';
+    document.querySelectorAll('.method-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.method === method);
+    });
+  };
+
+  window.saveProfile = async function(e) {
+    e.preventDefault();
+    const method = document.getElementById('pd_method').value;
+    const accountName = document.getElementById('pd_accountName').value.trim();
+    const accountNumber = document.getElementById('pd_accountNumber').value.trim();
+    const country = document.getElementById('pd_country').value.trim();
+
+    if (!method) {
+      alert('Payment method select karein.');
+      return;
+    }
+
+    const paymentDetails = { method, accountName, accountNumber };
+    if (method === 'international') paymentDetails.country = country;
+
+    await update(ref(db, `youtubers/${currentCode}`), { paymentDetails });
+    document.getElementById('profileSavedMsg').style.display = 'block';
+    setTimeout(() => { document.getElementById('profileSavedMsg').style.display = 'none'; }, 2500);
+    updateProfileBadge(paymentDetails);
+  };
+
+  function loadLeaderboard() {
+    onValue(ref(db, 'youtubers'), (snapshot) => {
+      if (!snapshot.exists()) return;
+      const all = snapshot.val();
+      const entries = Object.entries(all)
+        .map(([code, d]) => ({
+          code,
+          name: d.name || code,
+          totalCommission: Number(d.totalCommission) || 0,
+        }))
+        .sort((a, b) => b.totalCommission - a.totalCommission)
+        .slice(0, 20);
+
+      const tbody = document.getElementById('leaderboardBody');
+      tbody.innerHTML = entries.map((e, i) => `
+        <tr class="${e.code === currentCode ? 'highlight-row' : ''}">
+          <td>#${i + 1}</td>
+          <td>${e.name}${e.code === currentCode ? ' (You)' : ''}</td>
+          <td class="rs-cell">Rs. ${e.totalCommission.toFixed(2)}</td>
+        </tr>
+      `).join('');
+    });
+  }
+
+  window.logout = async function() {
+    await signOut(auth);
+    window.location.href = 'partner.html';
+  };
+</script>
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:#0A1628; color:#fff; min-height:100vh; }
+  .topbar { background:#121929; border-bottom:1px solid #1e2d45; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; }
+  .tlogo { display:flex; align-items:center; gap:10px; font-weight:bold; }
+  .tlogo .licon { width:34px; height:34px; background:#FFD700; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#7A4A00; }
+  .btn-logout { padding:7px 14px; background:transparent; border:1px solid #ff6b6b; color:#ff6b6b; border-radius:8px; cursor:pointer; font-size:12px; }
+  .container { max-width:900px; margin:0 auto; padding:24px; }
+
+  .code-card { background:linear-gradient(135deg, #FFD700, #FFA500); border-radius:16px; padding:22px; text-align:center; margin-bottom:20px; color:#1A0A00; }
+  .code-card .label { font-size:12px; opacity:0.8; }
+  .code-card .code { font-size:28px; font-weight:bold; letter-spacing:2px; margin:6px 0; }
+  .copy-btn { background:rgba(0,0,0,0.15); border:none; color:#1A0A00; padding:6px 16px; border-radius:8px; font-size:12px; cursor:pointer; font-weight:bold; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
+  .stat-card { background:#121929; border:1px solid #1e2d45; border-radius:14px; padding:18px; text-align:center; }
+  .stat-card .val { font-size:24px; font-weight:bold; color:#FFD700; }
+  .stat-card .lbl { font-size:12px; color:#8BA0C0; margin-top:4px; }
+
+  .section-card { background:#121929; border:1px solid #1e2d45; border-radius:16px; padding:22px; margin-bottom:20px; }
+  .section-title { font-size:16px; font-weight:bold; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  .badge-incomplete { background:rgba(249,115,22,0.15); color:#fb923c; font-size:11px; padding:3px 10px; border-radius:20px; }
+
+  .method-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:16px; }
+  .method-option { padding:12px; text-align:center; background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1); border-radius:10px; cursor:pointer; font-size:13px; }
+  .method-option.selected { border-color:#FFD700; background:rgba(255,215,0,0.1); color:#FFD700; }
+
+  .fg { margin-bottom:14px; }
+  .fg label { display:block; color:#8BA0C0; font-size:12px; margin-bottom:6px; }
+  .fg input { width:100%; padding:11px 13px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:14px; outline:none; }
+  .fg input:focus { border-color:#FFD700; }
+
+  .btn { padding:12px 24px; background:#FFD700; border:none; border-radius:10px; font-size:14px; font-weight:bold; color:#1A0A00; cursor:pointer; }
+  .btn:hover { background:#FFC200; }
+  #profileSavedMsg { display:none; color:#4ade80; font-size:12px; margin-top:10px; }
+
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; padding:10px; color:#8BA0C0; font-size:11px; border-bottom:1px solid #1e2d45; }
+  td { padding:10px; border-bottom:1px solid #0d1526; font-size:13px; }
+  .rs-cell { color:#4ade80; font-weight:bold; }
+  .highlight-row td { background:rgba(255,215,0,0.08); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tlogo"><div class="licon">$</div> Partner Dashboard</div>
+  <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+</div>
+
+<div class="container">
+
+  <div class="code-card">
+    <div class="label">Your Promo Code</div>
+    <div class="code" id="promoCode">...</div>
+    <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('promoCode').textContent)">📋 Copy Code</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="val" id="totalReferred">0</div><div class="lbl">Total Users Joined</div></div>
+    <div class="stat-card"><div class="val" id="totalWithdrawn">0</div><div class="lbl">Users Who Withdrew ($20+)</div></div>
+    <div class="stat-card"><div class="val" id="totalEarned">Rs. 0</div><div class="lbl">Total Earned</div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">
+      Payment Profile
+      <span class="badge-incomplete" id="profileBadge">⚠ Incomplete - complete karein</span>
+    </div>
+
+    <form onsubmit="saveProfile(event)">
+      <input type="hidden" id="pd_method">
+      <div class="method-grid">
+        <div class="method-option" data-method="easypaisa" onclick="togglePaymentFields('easypaisa')">📱 Easypaisa</div>
+        <div class="method-option" data-method="jazzcash" onclick="togglePaymentFields('jazzcash')">📱 JazzCash</div>
+        <div class="method-option" data-method="bank" onclick="togglePaymentFields('bank')">🏦 Bank Transfer</div>
+        <div class="method-option" data-method="international" onclick="togglePaymentFields('international')">🌍 International</div>
+      </div>
+
+      <div class="fg"><label>Account Holder Name</label><input type="text" id="pd_accountName" placeholder="Full name as per account"></div>
+      <div class="fg"><label>Account / Phone / IBAN Number</label><input type="text" id="pd_accountNumber" placeholder="Account number"></div>
+      <div class="fg" id="countryField" style="display:none"><label>Country</label><input type="text" id="pd_country" placeholder="e.g. United States"></div>
+
+      <button type="submit" class="btn">Save Profile</button>
+      <div id="profileSavedMsg">✅ Profile saved!</div>
+    </form>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">🏆 Partner Leaderboard</div>
+    <table>
+      <thead><tr><th>Rank</th><th>Name</th><th>Total Earned</th></tr></thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>
