@@ -5,6 +5,105 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Partner Dashboard - Ads Earn App</title>
 
+<!-- ===== LANGUAGE (Roman Urdu / English) - same key 'lang' partner.html mein bhi use hoti hai ===== -->
+<script>
+  const I18N = {
+    ru: {
+      pageTitle: "Partner Dashboard - Ads Earn App",
+      dashTitle: "Partner Dashboard",
+      logout: "🚪 Logout",
+      yourCode: "Aapka Promo Code",
+      copy: "📋 Code Copy Karein",
+      copied: "✅ Copy ho gaya!",
+      noticeTitle: "🎉 Mubarak ho! Abhi sab se behtareen moqa hai",
+      noticeBody: "Is waqt minimum withdrawal <strong>$20</strong> hai, is liye aapko milne wala <strong>2% commission</strong> abhi sab se zyada hai (har $20 withdrawal par <strong>$0.40</strong>).",
+      noticeWarn: "⚠️ <b>Warning:</b> <strong>5 se 7 mahine</strong> baad hamara minimum withdrawal <strong>$20 se ghat kar $5 se $7</strong> tak aa jayega. Tab wohi 2% ka hisaab bohat kam ho jayega (jaise $5 par sirf <strong>$0.10</strong>).",
+      noticeHurry: "⏳ Is liye time waste na karein, abhi promo code banayein aur users jodna shuru karein!",
+      statJoined: "Total Users Joined",
+      statWithdrew: "Users Jinhon ne Withdraw Kiya ($20+)",
+      statEarned: "Total Kamai",
+      paymentProfile: "Payment Profile",
+      badge: "⚠ Adhoora hai - mukammal karein",
+      mBank: "🏦 Bank Transfer",
+      mIntl: "🌍 International",
+      lblName: "Account Holder ka Naam",
+      phName: "Account ke mutabiq poora naam",
+      lblNumber: "Account / Phone / IBAN Number",
+      phNumber: "Account number",
+      lblCountry: "Mulk (Country)",
+      phCountry: "e.g. United States",
+      save: "Profile Save Karein",
+      saved: "✅ Profile save ho gayi!",
+      leaderboard: "🏆 Partner Leaderboard",
+      thRank: "Rank",
+      thName: "Naam",
+      thEarned: "Total Kamai",
+      you: "Aap",
+      accMissing: "Account data nahi mila. Support se contact karein.",
+      selectMethod: "Payment method select karein."
+    },
+    en: {
+      pageTitle: "Partner Dashboard - Ads Earn App",
+      dashTitle: "Partner Dashboard",
+      logout: "🚪 Logout",
+      yourCode: "Your Promo Code",
+      copy: "📋 Copy Code",
+      copied: "✅ Copied!",
+      noticeTitle: "🎉 Congratulations! This is the best time to join",
+      noticeBody: "Right now the minimum withdrawal is <strong>$20</strong>, so the <strong>2% commission</strong> you earn is at its highest (<strong>$0.40</strong> on every $20 withdrawal).",
+      noticeWarn: "⚠️ <b>Warning:</b> In <strong>5 to 7 months</strong> our minimum withdrawal will drop from <strong>$20 to $5–$7</strong>. Then the same 2% will become very small (e.g. only <strong>$0.10</strong> on $5).",
+      noticeHurry: "⏳ So don't waste time — share your promo code now and start bringing in users!",
+      statJoined: "Total Users Joined",
+      statWithdrew: "Users Who Withdrew ($20+)",
+      statEarned: "Total Earned",
+      paymentProfile: "Payment Profile",
+      badge: "⚠ Incomplete - please complete it",
+      mBank: "🏦 Bank Transfer",
+      mIntl: "🌍 International",
+      lblName: "Account Holder Name",
+      phName: "Full name as per account",
+      lblNumber: "Account / Phone / IBAN Number",
+      phNumber: "Account number",
+      lblCountry: "Country",
+      phCountry: "e.g. United States",
+      save: "Save Profile",
+      saved: "✅ Profile saved!",
+      leaderboard: "🏆 Partner Leaderboard",
+      thRank: "Rank",
+      thName: "Name",
+      thEarned: "Total Earned",
+      you: "You",
+      accMissing: "Account data not found. Please contact support.",
+      selectMethod: "Please select a payment method."
+    }
+  };
+
+  let LANG = 'ru';
+  try { LANG = localStorage.getItem('lang') || 'ru'; } catch (_) {}
+  if (!I18N[LANG]) LANG = 'ru';
+
+  window.t = function (key) {
+    return (I18N[LANG] && I18N[LANG][key]) || I18N.ru[key] || key;
+  };
+
+  window.applyLang = function () {
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === LANG));
+    document.title = t('pageTitle');
+    document.documentElement.lang = LANG === 'en' ? 'en' : 'ur-Latn';
+    if (window.onLangChange) window.onLangChange();
+  };
+
+  window.setLang = function (l) {
+    LANG = l;
+    try { localStorage.setItem('lang', l); } catch (_) {}
+    applyLang();
+  };
+
+  document.addEventListener('DOMContentLoaded', applyLang);
+</script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -22,6 +121,7 @@
   const db = getDatabase(app);
 
   let currentCode = null;
+  let leaderboardEntries = [];
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -32,7 +132,7 @@
     // uid se promo code dhoondo
     const accSnap = await get(ref(db, `promoterAccounts/${user.uid}`));
     if (!accSnap.exists()) {
-      alert('Account data nahi mila. Support se contact karein.');
+      alert(t('accMissing'));
       return;
     }
     currentCode = accSnap.val().code;
@@ -90,7 +190,7 @@
     const country = document.getElementById('pd_country').value.trim();
 
     if (!method) {
-      alert('Payment method select karein.');
+      alert(t('selectMethod'));
       return;
     }
 
@@ -103,11 +203,25 @@
     updateProfileBadge(paymentDetails);
   };
 
+  function renderLeaderboard() {
+    const tbody = document.getElementById('leaderboardBody');
+    tbody.innerHTML = leaderboardEntries.map((e, i) => `
+      <tr class="${e.code === currentCode ? 'highlight-row' : ''}">
+        <td>#${i + 1}</td>
+        <td>${e.name}${e.code === currentCode ? ' (' + t('you') + ')' : ''}</td>
+        <td class="rs-cell">Rs. ${e.totalCommission.toFixed(2)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // language badalne par leaderboard dobara draw ho
+  window.onLangChange = renderLeaderboard;
+
   function loadLeaderboard() {
     onValue(ref(db, 'youtubers'), (snapshot) => {
       if (!snapshot.exists()) return;
       const all = snapshot.val();
-      const entries = Object.entries(all)
+      leaderboardEntries = Object.entries(all)
         .map(([code, d]) => ({
           code,
           name: d.name || code,
@@ -115,17 +229,16 @@
         }))
         .sort((a, b) => b.totalCommission - a.totalCommission)
         .slice(0, 20);
-
-      const tbody = document.getElementById('leaderboardBody');
-      tbody.innerHTML = entries.map((e, i) => `
-        <tr class="${e.code === currentCode ? 'highlight-row' : ''}">
-          <td>#${i + 1}</td>
-          <td>${e.name}${e.code === currentCode ? ' (You)' : ''}</td>
-          <td class="rs-cell">Rs. ${e.totalCommission.toFixed(2)}</td>
-        </tr>
-      `).join('');
+      renderLeaderboard();
     });
   }
+
+  window.copyCode = function() {
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(document.getElementById('promoCode').textContent);
+    btn.textContent = t('copied');
+    setTimeout(() => { btn.innerHTML = t('copy'); }, 1500);
+  };
 
   window.logout = async function() {
     await signOut(auth);
@@ -136,10 +249,17 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Segoe UI',sans-serif; background:#0A1628; color:#fff; min-height:100vh; }
-  .topbar { background:#121929; border-bottom:1px solid #1e2d45; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; }
+  .topbar { background:#121929; border-bottom:1px solid #1e2d45; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
   .tlogo { display:flex; align-items:center; gap:10px; font-weight:bold; }
   .tlogo .licon { width:34px; height:34px; background:#FFD700; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#7A4A00; }
+  .top-right { display:flex; align-items:center; gap:8px; }
   .btn-logout { padding:7px 14px; background:transparent; border:1px solid #ff6b6b; color:#ff6b6b; border-radius:8px; cursor:pointer; font-size:12px; }
+
+  /* ===== NEW: Language switch ===== */
+  .lang-switch { display:flex; gap:4px; }
+  .lang-btn { padding:7px 11px; background:transparent; border:1px solid #1e2d45; color:#8BA0C0; font-size:12px; font-weight:bold; border-radius:8px; cursor:pointer; }
+  .lang-btn.active { background:#FFD700; border-color:#FFD700; color:#1A0A00; }
+
   .container { max-width:900px; margin:0 auto; padding:24px; }
 
   .code-card { background:linear-gradient(135deg, #FFD700, #FFA500); border-radius:16px; padding:22px; text-align:center; margin-bottom:20px; color:#1A0A00; }
@@ -147,7 +267,7 @@
   .code-card .code { font-size:28px; font-weight:bold; letter-spacing:2px; margin:6px 0; }
   .copy-btn { background:rgba(0,0,0,0.15); border:none; color:#1A0A00; padding:6px 16px; border-radius:8px; font-size:12px; cursor:pointer; font-weight:bold; }
 
-  /* ===== NEW: Congratulations + Warning notice ===== */
+  /* ===== Congratulations + Warning notice ===== */
   .notice-box {
     background:linear-gradient(135deg, rgba(34,197,94,0.12), rgba(249,115,22,0.12));
     border:1px solid rgba(249,115,22,0.45);
@@ -192,42 +312,47 @@
 <body>
 
 <div class="topbar">
-  <div class="tlogo"><div class="licon">$</div> Partner Dashboard</div>
-  <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+  <div class="tlogo"><div class="licon">$</div> <span data-i18n="dashTitle">Partner Dashboard</span></div>
+  <div class="top-right">
+    <div class="lang-switch">
+      <button type="button" class="lang-btn active" data-lang="ru" onclick="setLang('ru')">Roman Urdu</button>
+      <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')">English</button>
+    </div>
+    <button class="btn-logout" onclick="logout()" data-i18n="logout">🚪 Logout</button>
+  </div>
 </div>
 
 <div class="container">
 
   <div class="code-card">
-    <div class="label">Your Promo Code</div>
+    <div class="label" data-i18n="yourCode">Aapka Promo Code</div>
     <div class="code" id="promoCode">...</div>
-    <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('promoCode').textContent)">📋 Copy Code</button>
+    <button class="copy-btn" id="copyBtn" onclick="copyCode()" data-i18n="copy">📋 Code Copy Karein</button>
   </div>
 
-  <!-- NEW LABEL -->
   <div class="notice-box">
-    <div class="n-title">🎉 Mubarak ho! Abhi sab se behtareen moqa hai</div>
-    <div>
+    <div class="n-title" data-i18n="noticeTitle">🎉 Mubarak ho! Abhi sab se behtareen moqa hai</div>
+    <div data-i18n="noticeBody">
       Is waqt minimum withdrawal <strong>$20</strong> hai, is liye aapko milne wala <strong>2% commission</strong> abhi sab se zyada hai
       (har $20 withdrawal par <strong>$0.40</strong>).
     </div>
-    <div class="n-warn">
+    <div class="n-warn" data-i18n="noticeWarn">
       ⚠️ <b>Warning:</b> <strong>5 se 7 mahine</strong> baad hamara minimum withdrawal <strong>$20 se ghat kar $5 se $7</strong> tak aa jayega.
       Tab wohi 2% ka hisaab bohat kam ho jayega (jaise $5 par sirf <strong>$0.10</strong>).
     </div>
-    <div class="n-hurry">⏳ Is liye time waste na karein, abhi promo code banayein aur users jodna shuru karein!</div>
+    <div class="n-hurry" data-i18n="noticeHurry">⏳ Is liye time waste na karein, abhi promo code banayein aur users jodna shuru karein!</div>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card"><div class="val" id="totalReferred">0</div><div class="lbl">Total Users Joined</div></div>
-    <div class="stat-card"><div class="val" id="totalWithdrawn">0</div><div class="lbl">Users Who Withdrew ($20+)</div></div>
-    <div class="stat-card"><div class="val" id="totalEarned">Rs. 0</div><div class="lbl">Total Earned</div></div>
+    <div class="stat-card"><div class="val" id="totalReferred">0</div><div class="lbl" data-i18n="statJoined">Total Users Joined</div></div>
+    <div class="stat-card"><div class="val" id="totalWithdrawn">0</div><div class="lbl" data-i18n="statWithdrew">Users Jinhon ne Withdraw Kiya ($20+)</div></div>
+    <div class="stat-card"><div class="val" id="totalEarned">Rs. 0</div><div class="lbl" data-i18n="statEarned">Total Kamai</div></div>
   </div>
 
   <div class="section-card">
     <div class="section-title">
-      Payment Profile
-      <span class="badge-incomplete" id="profileBadge">⚠ Incomplete - complete karein</span>
+      <span data-i18n="paymentProfile">Payment Profile</span>
+      <span class="badge-incomplete" id="profileBadge" data-i18n="badge">⚠ Adhoora hai - mukammal karein</span>
     </div>
 
     <form onsubmit="saveProfile(event)">
@@ -235,23 +360,23 @@
       <div class="method-grid">
         <div class="method-option" data-method="easypaisa" onclick="togglePaymentFields('easypaisa')">📱 Easypaisa</div>
         <div class="method-option" data-method="jazzcash" onclick="togglePaymentFields('jazzcash')">📱 JazzCash</div>
-        <div class="method-option" data-method="bank" onclick="togglePaymentFields('bank')">🏦 Bank Transfer</div>
-        <div class="method-option" data-method="international" onclick="togglePaymentFields('international')">🌍 International</div>
+        <div class="method-option" data-method="bank" onclick="togglePaymentFields('bank')" data-i18n="mBank">🏦 Bank Transfer</div>
+        <div class="method-option" data-method="international" onclick="togglePaymentFields('international')" data-i18n="mIntl">🌍 International</div>
       </div>
 
-      <div class="fg"><label>Account Holder Name</label><input type="text" id="pd_accountName" placeholder="Full name as per account"></div>
-      <div class="fg"><label>Account / Phone / IBAN Number</label><input type="text" id="pd_accountNumber" placeholder="Account number"></div>
-      <div class="fg" id="countryField" style="display:none"><label>Country</label><input type="text" id="pd_country" placeholder="e.g. United States"></div>
+      <div class="fg"><label data-i18n="lblName">Account Holder ka Naam</label><input type="text" id="pd_accountName" data-i18n-ph="phName" placeholder="Account ke mutabiq poora naam"></div>
+      <div class="fg"><label data-i18n="lblNumber">Account / Phone / IBAN Number</label><input type="text" id="pd_accountNumber" data-i18n-ph="phNumber" placeholder="Account number"></div>
+      <div class="fg" id="countryField" style="display:none"><label data-i18n="lblCountry">Mulk (Country)</label><input type="text" id="pd_country" data-i18n-ph="phCountry" placeholder="e.g. United States"></div>
 
-      <button type="submit" class="btn">Save Profile</button>
-      <div id="profileSavedMsg">✅ Profile saved!</div>
+      <button type="submit" class="btn" data-i18n="save">Profile Save Karein</button>
+      <div id="profileSavedMsg" data-i18n="saved">✅ Profile save ho gayi!</div>
     </form>
   </div>
 
   <div class="section-card">
-    <div class="section-title">🏆 Partner Leaderboard</div>
+    <div class="section-title" data-i18n="leaderboard">🏆 Partner Leaderboard</div>
     <table>
-      <thead><tr><th>Rank</th><th>Name</th><th>Total Earned</th></tr></thead>
+      <thead><tr><th data-i18n="thRank">Rank</th><th data-i18n="thName">Naam</th><th data-i18n="thEarned">Total Kamai</th></tr></thead>
       <tbody id="leaderboardBody"></tbody>
     </table>
   </div>
