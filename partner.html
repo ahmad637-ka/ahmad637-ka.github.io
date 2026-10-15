@@ -167,6 +167,20 @@
   .btn:hover { background:#FFC200; }
   .btn:disabled { background:#555; color:#999; cursor:not-allowed; }
   .info-box { background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; padding:12px 14px; margin-bottom:20px; font-size:12px; color:#FFD700; line-height:1.5; }
+
+  /* ===== NEW: Congratulations + Warning notice ===== */
+  .notice-box {
+    background:linear-gradient(135deg, rgba(34,197,94,0.12), rgba(249,115,22,0.12));
+    border:1px solid rgba(249,115,22,0.45);
+    border-radius:12px; padding:14px 16px; margin-bottom:20px;
+    font-size:12.5px; line-height:1.65; color:#e5edf8;
+  }
+  .notice-box .n-title { font-size:14px; font-weight:bold; color:#4ade80; margin-bottom:6px; }
+  .notice-box .n-warn { margin-top:8px; padding-top:8px; border-top:1px dashed rgba(249,115,22,0.4); }
+  .notice-box .n-warn b { color:#fb923c; }
+  .notice-box .n-hurry { margin-top:8px; font-weight:bold; color:#FFD700; }
+  .notice-box strong { color:#fff; }
+
   .terms { color:#8BA0C0; font-size:11px; line-height:1.5; margin-top:12px; text-align:center; }
   #resultBox { margin-top:20px; display:none; }
   .result-success { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:12px; padding:20px; text-align:center; }
@@ -193,6 +207,21 @@
     <div class="info-box">
       💡 Jo bhi user aapke promo code se sign up karega, uski <strong>pehli 2 withdrawals</strong> par aapko har dafa <strong>2% commission</strong> milega.
     </div>
+
+    <!-- NEW LABEL -->
+    <div class="notice-box">
+      <div class="n-title">🎉 Mubarak ho! Abhi sab se behtareen moqa hai</div>
+      <div>
+        Is waqt minimum withdrawal <strong>$20</strong> hai, is liye aapko milne wala <strong>2% commission</strong> abhi sab se zyada hai
+        (har $20 withdrawal par <strong>$0.40</strong>).
+      </div>
+      <div class="n-warn">
+        ⚠️ <b>Warning:</b> <strong>5 se 7 mahine</strong> baad hamara minimum withdrawal <strong>$20 se ghat kar $5 se $7</strong> tak aa jayega.
+        Tab wohi 2% ka hisaab bohat kam ho jayega (jaise $5 par sirf <strong>$0.10</strong>).
+      </div>
+      <div class="n-hurry">⏳ Is liye time waste na karein, abhi promo code banayein aur users jodna shuru karein!</div>
+    </div>
+
     <div class="fg"><label>Full Name</label><input type="text" id="su_fullName" required placeholder="Ahmad Khan"></div>
     <div class="fg"><label>Email</label><input type="email" id="su_email" required placeholder="you@example.com"></div>
     <div class="fg"><label>Password</label><input type="password" id="su_password" required minlength="6" placeholder="Kam az kam 6 characters"></div>
