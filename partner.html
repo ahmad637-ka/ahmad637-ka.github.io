@@ -10,7 +10,6 @@
   import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCZnYb6pb5JXWpTFy15XRaAyEixZdVXclA",
@@ -21,9 +20,22 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getDatabase(app);
 
-  const BACKEND_URL = 'https://platfroms-verfications-production.up.railway.app';
+  // Cloudflare Worker (taskcpm-api). Agar tumhara Worker URL alag hai to yahan badlo.
+  const WORKER_URL = 'https://taskcpm-api.ha1512688.workers.dev';
+
+  // ===== Promo code lo (agar pehle se hai to wahi wapas aata hai) =====
+  async function getPromoCode(user, fullName, email) {
+    const token = await user.getIdToken();
+    const res = await fetch(`${WORKER_URL}/partner-signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name: fullName, email }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.promoCode) throw new Error('code_failed');
+    return data.promoCode;
+  }
 
   // ===== TAB SWITCHING =====
   window.switchTab = function(tab) {
@@ -35,6 +47,16 @@
     document.getElementById('resultBox').innerHTML = '';
   };
 
+  function showError(msg) {
+    const box = document.getElementById('resultBox');
+    box.style.display = 'block';
+    box.innerHTML = '';
+    const d = document.createElement('div');
+    d.className = 'result-error';
+    d.textContent = '❌ ' + msg;
+    box.appendChild(d);
+  }
+
   // ===== SIGNUP =====
   window.handleSignup = async function(e) {
     e.preventDefault();
@@ -44,63 +66,49 @@
     const fullName = document.getElementById('su_fullName').value.trim();
     const email = document.getElementById('su_email').value.trim();
     const password = document.getElementById('su_password').value;
-    const platform = document.getElementById('su_platform').value;
-    const profileUrl = document.getElementById('su_profileUrl').value.trim();
-    const claimedCount = parseInt(document.getElementById('su_claimedCount').value, 10);
 
-    if (password.length < 6) {
-      resultBox.style.display = 'block';
-      resultBox.innerHTML = '<div class="result-error">❌ Password kam az kam 6 characters ka hona chahiye.</div>';
-      return;
-    }
+    if (!fullName) { showError('Apna naam likhein.'); return; }
+    if (password.length < 6) { showError('Password kam az kam 6 characters ka hona chahiye.'); return; }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Verifying...';
+    submitBtn.textContent = 'Account ban raha hai...';
     resultBox.style.display = 'block';
-    resultBox.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#8BA0C0;font-size:12px;margin-top:10px">Account check ho raha hai, thoda wait karein (10-30 seconds)...</p>';
+    resultBox.innerHTML = '<div class="spinner"></div>';
 
     try {
-      // Step 1: Backend se follower/subscriber verify karo
-      const response = await fetch(`${BACKEND_URL}/verify-social`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fullName, email, platform, url: profileUrl, claimedCount }),
-      });
-      const data = await response.json();
-
-      if (!data.verified) {
-        resultBox.innerHTML = `<div class="result-error">❌ ${data.reason || 'Verification fail ho gayi.'}</div>`;
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Verify & Create Account';
-        return;
-      }
-
-      // Step 2: Verified ho gaya - ab login account banao (email + password)
+      // Step 1: login account banao (email + password)
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
 
-      // Step 3: uid ko promo code se link karo taake login pe pata chal sake
-      await set(ref(db, `promoterAccounts/${uid}`), { code: data.promoCode, email, fullName });
-      await set(ref(db, `youtubers/${data.promoCode}/uid`), uid);
+      // Step 2: Worker se promo code lo (server khud database mein save karta hai)
+      const code = await getPromoCode(userCredential.user, fullName, email);
 
-      resultBox.innerHTML = `
-        <div class="result-success">
-          <div>✅ Account ban gaya! Apka promo code:</div>
-          <div class="code">${data.promoCode}</div>
-          <div style="font-size:12px;color:#8BA0C0;margin-top:8px">Dashboard khul raha hai...</div>
-        </div>
-      `;
+      resultBox.innerHTML = '';
+      const ok = document.createElement('div');
+      ok.className = 'result-success';
+      const l1 = document.createElement('div');
+      l1.textContent = '✅ Account ban gaya! Apka promo code:';
+      const cd = document.createElement('div');
+      cd.className = 'code';
+      cd.textContent = code;
+      const l2 = document.createElement('div');
+      l2.style.cssText = 'font-size:12px;color:#8BA0C0;margin-top:8px';
+      l2.textContent = 'Dashboard khul raha hai...';
+      ok.append(l1, cd, l2);
+      resultBox.appendChild(ok);
 
       setTimeout(() => { window.location.href = 'dashboard.html'; }, 1800);
 
     } catch (err) {
-      let msg = 'Kuch ghalat ho gaya, dobara try karein.';
-      if (err.code === 'auth/email-already-in-use') {
-        msg = 'Ye email pehle se registered hai. Login tab se login karein.';
-      }
-      resultBox.innerHTML = `<div class="result-error">❌ ${msg}</div>`;
+      console.error('SIGNUP ERROR:', err);
+      let msg = 'Kuch ghalat ho gaya, dobara try karein. (' + (err.code || err.message || 'unknown') + ')';
+      if (err.code === 'auth/email-already-in-use') msg = 'Ye email pehle se registered hai. Login tab se login karein.';
+      else if (err.code === 'auth/weak-password') msg = 'Password kamzor hai, kam az kam 6 characters rakhein.';
+      else if (err.code === 'auth/invalid-email') msg = 'Email ka format theek nahi.';
+      else if (err.code === 'auth/network-request-failed') msg = 'Internet ka masla hai, dobara try karein.';
+      else if (err.message === 'code_failed') msg = 'Account ban gaya lekin promo code nahi ban saka. Login tab se login karein, code khud ban jayega.';
+      showError(msg);
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Verify & Create Account';
+      submitBtn.textContent = 'Create Account';
     }
   };
 
@@ -119,13 +127,19 @@
     resultBox.innerHTML = '<div class="spinner"></div>';
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      resultBox.innerHTML = `<div class="result-success"><div>✅ Login ho gaya! Dashboard khul raha hai...</div></div>`;
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+
+      // Agar signup ke waqt code nahi ban saka tha to ab ban jayega (pehle se hai to wahi milega)
+      try { await getPromoCode(cred.user, email.split('@')[0], email); } catch (_) {}
+
+      resultBox.innerHTML = '<div class="result-success"><div>✅ Login ho gaya! Dashboard khul raha hai...</div></div>';
       setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
     } catch (err) {
+      console.error('LOGIN ERROR:', err);
       let msg = 'Email ya password ghalat hai.';
-      if (err.code === 'auth/user-not-found') msg = 'Ye email registered nahi hai. Signup tab use karein.';
-      resultBox.innerHTML = `<div class="result-error">❌ ${msg}</div>`;
+      if (err.code === 'auth/network-request-failed') msg = 'Internet ka masla hai, dobara try karein.';
+      else if (err.code === 'auth/too-many-requests') msg = 'Bohat zyada koshish ho gayi, thodi der baad try karein.';
+      showError(msg);
       submitBtn.disabled = false;
       submitBtn.textContent = 'Login';
     }
@@ -149,11 +163,11 @@
   .fg label { display:block; color:#8BA0C0; font-size:12px; margin-bottom:6px; }
   .fg input, .fg select { width:100%; padding:12px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:14px; outline:none; }
   .fg input:focus, .fg select:focus { border-color:#FFD700; }
-  .fg select option { background:#121929; }
   .btn { width:100%; padding:14px; background:#FFD700; border:none; border-radius:10px; font-size:15px; font-weight:bold; color:#1A0A00; cursor:pointer; margin-top:8px; }
   .btn:hover { background:#FFC200; }
   .btn:disabled { background:#555; color:#999; cursor:not-allowed; }
   .info-box { background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; padding:12px 14px; margin-bottom:20px; font-size:12px; color:#FFD700; line-height:1.5; }
+  .terms { color:#8BA0C0; font-size:11px; line-height:1.5; margin-top:12px; text-align:center; }
   #resultBox { margin-top:20px; display:none; }
   .result-success { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:12px; padding:20px; text-align:center; }
   .result-success .code { font-size:24px; font-weight:bold; color:#4ade80; margin:10px 0; letter-spacing:1px; }
@@ -177,23 +191,13 @@
   <!-- SIGNUP FORM -->
   <form id="signupForm" onsubmit="handleSignup(event)">
     <div class="info-box">
-      💡 Har us user se jo aapke promo code se sign up karke apni <strong>pehli withdrawal</strong> nikalega, aapko uska <strong>2% commission</strong> milega.
+      💡 Jo bhi user aapke promo code se sign up karega, uski <strong>pehli 2 withdrawals</strong> par aapko har dafa <strong>2% commission</strong> milega.
     </div>
     <div class="fg"><label>Full Name</label><input type="text" id="su_fullName" required placeholder="Ahmad Khan"></div>
     <div class="fg"><label>Email</label><input type="email" id="su_email" required placeholder="you@example.com"></div>
     <div class="fg"><label>Password</label><input type="password" id="su_password" required minlength="6" placeholder="Kam az kam 6 characters"></div>
-    <div class="fg">
-      <label>Platform</label>
-      <select id="su_platform" required>
-        <option value="">Select platform</option>
-        <option value="youtube">YouTube</option>
-        <option value="tiktok">TikTok</option>
-        <option value="instagram">Instagram</option>
-      </select>
-    </div>
-    <div class="fg"><label>Profile / Channel Link</label><input type="url" id="su_profileUrl" required placeholder="https://youtube.com/@yourchannel"></div>
-    <div class="fg"><label>Followers / Subscribers Count</label><input type="number" id="su_claimedCount" required min="1" placeholder="e.g. 5000"></div>
-    <button type="submit" class="btn" id="signupBtn">Verify & Create Account</button>
+    <button type="submit" class="btn" id="signupBtn">Create Account</button>
+    <p class="terms">Logon ko jhoothe wade ya galat maloomat dena mana hai.</p>
   </form>
 
   <!-- LOGIN FORM -->
@@ -208,4 +212,3 @@
 
 </body>
 </html>
-
